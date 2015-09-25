@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Publish</title>
+    <style>
+    body {
+      white-space: pre;
+      font-family: monospace;
+    }
+    </style>
+  </head>
+  <body>
+    <form method="post">
+      <input type="submit" value="Publish">
+    </form>
+    <script>
+      var form = document.forms[0];
+      form.addEventListener("submit", function (event) {
+        event.preventDefault();
+        var xhr = new XMLHttpRequest();
+        xhr.addEventListener("progress", function () {
+          if (xhr.responseText.length > 0) document.body.textContent = xhr.responseText;
+          scrollTo(0, document.body.scrollHeight);
+        });
+        xhr.open(form.method, form.action);
+        xhr.send();
+      });
+    </script>
+  </body>
+</html>
