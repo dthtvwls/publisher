@@ -68,7 +68,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// stopping the program flow if there's a problem removing the old link is undesirable (what if it didn't exist?)
-        // if there was some other kind of problem it will surface in the next call when we try to symlink
+		// if there was some other kind of problem it will surface in the next call when we try to symlink
 		os.Remove(link)
 
 		if err := os.Symlink(dir, link); err != nil {
