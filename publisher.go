@@ -24,9 +24,9 @@ func init() {
 func main() {
 	flag.Parse()
 
-    if src == "" || dest == "" || link == "" || port == "" {
-        log.Fatal("All arguments are required (see -h for help)")
-    }
+	if src == "" || dest == "" || link == "" || port == "" {
+		log.Fatal("All arguments are required (see -h for help)")
+	}
 
 	uri, err := url.Parse(src)
 	if err != nil {
