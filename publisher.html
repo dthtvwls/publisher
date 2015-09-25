@@ -3,10 +3,10 @@
   <head>
     <title>Publish</title>
     <style>
-    body {
-      white-space: pre;
-      font-family: monospace;
-    }
+      body {
+        white-space: pre;
+        font-family: monospace;
+      }
     </style>
   </head>
   <body>
@@ -19,8 +19,10 @@
         event.preventDefault();
         var xhr = new XMLHttpRequest();
         xhr.addEventListener("progress", function () {
-          if (xhr.responseText.length > 0) document.body.textContent = xhr.responseText;
-          scrollTo(0, document.body.scrollHeight);
+          if (xhr.responseText.length > 0) {
+            document.body.textContent = xhr.responseText;
+            scrollTo(0, document.body.scrollHeight);
+          }
         });
         xhr.open(form.method, form.action);
         xhr.send();

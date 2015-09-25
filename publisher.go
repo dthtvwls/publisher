@@ -62,14 +62,13 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			// wget will have almost certainly tried some requests that returned http errors, and thus return 8:
 			//   http://www.gnu.org/software/wget/manual/html_node/Exit-Status.html
 			// so if the error was an "exit error", and the status is 8, let's not panic
-			if exiterr, ok := err.(*exec.ExitError); ok && exiterr.Sys().(syscall.WaitStatus).ExitStatus() == 8 {
-				// no-op
-			} else {
+			if exiterr, ok := err.(*exec.ExitError); !ok || exiterr.Sys().(syscall.WaitStatus).ExitStatus() != 8 {
 				panic(err)
 			}
 		}
 
-		// doesn't really matter if we error or not on this step
+		// stopping the program flow if there's a problem removing the old link is undesirable (what if it didn't exist?)
+        // if there was some other kind of problem it will surface in the next call when we try to symlink
 		os.Remove(link)
 
 		if err := os.Symlink(dir, link); err != nil {
