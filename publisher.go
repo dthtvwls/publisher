@@ -12,20 +12,22 @@ import (
 	"time"
 )
 
-var src, dest, link, port string
+var src, dest, link, port, user, pass string
 
 func init() {
-	flag.StringVar(&src, "src", "", "URL of the site to pull from")
-	flag.StringVar(&dest, "dest", "", "Directory to keep snapshots in")
-	flag.StringVar(&link, "link", "", "Location to symlink the latest snapshot to (e.g., for a static file server to serve)")
-	flag.StringVar(&port, "port", "", "Port for the web interface to listen on")
+	flag.StringVar(&src, "src", "", "(Required) URL of the site to pull from")
+	flag.StringVar(&dest, "dest", "", "(Required) Directory to keep snapshots in")
+	flag.StringVar(&link, "link", "", "(Required) Location to symlink the latest snapshot to (e.g., for a static file server to serve)")
+	flag.StringVar(&port, "port", "", "(Required) Port for the web interface to listen on")
+	flag.StringVar(&user, "user", "", "(Optional) HTTP auth username")
+	flag.StringVar(&pass, "pass", "", "(Optional) HTTP auth password")
 }
 
 func main() {
 	flag.Parse()
 
 	if src == "" || dest == "" || link == "" || port == "" {
-		log.Fatal("All arguments are required (see -h for help)")
+		log.Fatal("Some required arguments are missing (see -h for help)")
 	}
 
 	uri, err := url.Parse(src)
@@ -54,7 +56,9 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			panic(err)
 		}
 
-		cmd := exec.Command("wget", "--mirror", "--page-requisites", "--adjust-extension", "--convert-links", "--no-host-directories", "--directory-prefix="+dir, src)
+		// TODO: figure out chunked data because a curl call (for example) might bail before the wget job is done
+		cmd := exec.Command("wget", "--mirror", "--page-requisites", "--adjust-extension", "--convert-links",
+			"--no-host-directories", "--http-user="+user, "--http-password="+pass, "--directory-prefix="+dir, src)
 		cmd.Stdout = w
 		cmd.Stderr = w
 
@@ -68,7 +72,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// stopping the program flow if there's a problem removing the old link is undesirable (what if it didn't exist?)
-		// if there was some other kind of problem it will surface in the next call when we try to symlink
+		// if there was some other kind of problem it will hopefully surface in the next call when we try to symlink
 		os.Remove(link)
 
 		if err := os.Symlink(dir, link); err != nil {

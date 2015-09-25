@@ -17,6 +17,7 @@
       var form = document.forms[0];
       form.addEventListener("submit", function (event) {
         event.preventDefault();
+        form.elements[0].disabled = true;        
         var xhr = new XMLHttpRequest();
         xhr.addEventListener("progress", function () {
           if (xhr.responseText.length > 0) {
