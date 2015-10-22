@@ -82,7 +82,14 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			panic(err)
 		}
 
-		s3cmd := exec.Command("ACCESS_KEY="+access_key, "SECRET_KEY="+secret_key, "s3cmd", "sync", link+"/", "--delete-removed", "s3://"+bucket)
+		if err := os.Setenv("ACCESS_KEY", access_key); err != nil {
+			panic(err)
+		}
+		if err := os.Setenv("SECRET_KEY", secret_key); err != nil {
+			panic(err)
+		}
+
+		s3cmd := exec.Command("s3cmd", "sync", link+"/", "--delete-removed", "s3://"+bucket)
 		s3cmd.Stdout = w
 		s3cmd.Stderr = w
 
