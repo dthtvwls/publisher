@@ -94,7 +94,6 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		s3cmd.Stderr = w
 
 		if err := s3cmd.Run(); err != nil {
-			w.Write([]byte("Publishing the site locally went off without a hitch, but syncing to S3 failed for some reason, so you're probably fucked."))
 			panic(err)
 		}
 	} else {
