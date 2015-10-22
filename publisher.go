@@ -12,24 +12,23 @@ import (
 	"time"
 )
 
-var src, dest, link, port, user, pass, bucket, access_key, secret_key string
+var src, dest, port, user, pass, bucket, access_key, secret_key string
 
 func init() {
 	flag.StringVar(&src, "src", "", "(Required) URL of the site to pull from")
 	flag.StringVar(&dest, "dest", "", "(Required) Directory to keep snapshots in")
-	flag.StringVar(&link, "link", "", "(Required) Location to symlink the latest snapshot to (e.g., for a static file server to serve)")
 	flag.StringVar(&port, "port", "", "(Required) Port for the web interface to listen on")
 	flag.StringVar(&user, "user", "", "(Optional) HTTP auth username")
 	flag.StringVar(&pass, "pass", "", "(Optional) HTTP auth password")
-	flag.StringVar(&bucket, "bucket", "", "(Optional) S3 bucket to sync to after publishing locally (i.e. symlinking)")
-	flag.StringVar(&access_key, "access_key", "", "(Optional) AWS key for S3")
-	flag.StringVar(&secret_key, "secret_key", "", "(Optional) AWS secret for S3")
+	flag.StringVar(&bucket, "bucket", "", "(Required) S3 bucket to sync to after publishing locally (i.e. symlinking)")
+	flag.StringVar(&access_key, "access_key", "", "(Required) AWS key for S3")
+	flag.StringVar(&secret_key, "secret_key", "", "(Required) AWS secret for S3")
 }
 
 func main() {
 	flag.Parse()
 
-	if src == "" || dest == "" || link == "" || port == "" {
+	if src == "" || dest == "" || port == "" || bucket == "" || access_key == "" || secret_key == "" {
 		log.Fatal("Some required arguments are missing (see -h for help)")
 	}
 
@@ -42,7 +41,7 @@ func main() {
 	}
 	src = uri.String()
 
-	if !filepath.IsAbs(dest) || !filepath.IsAbs(link) {
+	if !filepath.IsAbs(dest) {
 		log.Fatal("Please use absolute paths")
 	}
 
@@ -74,14 +73,6 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		// stopping the program flow if there's a problem removing the old link is undesirable (what if it didn't exist?)
-		// if there was some other kind of problem it will hopefully surface in the next call when we try to symlink
-		os.Remove(link)
-
-		if err := os.Symlink(dir, link); err != nil {
-			panic(err)
-		}
-
 		if err := os.Setenv("ACCESS_KEY", access_key); err != nil {
 			panic(err)
 		}
@@ -89,7 +80,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			panic(err)
 		}
 
-		s3cmd := exec.Command("s3cmd", "sync", link+"/", "--delete-removed", "s3://"+bucket)
+		s3cmd := exec.Command("s3cmd", "sync", dir+"/", "--delete-removed", "s3://"+bucket)
 		s3cmd.Stdout = w
 		s3cmd.Stderr = w
 
