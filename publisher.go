@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-var src, dest, link, port, user, pass string
+var src, dest, link, port, user, pass, access_key, secret_key, bucket string
 
 func init() {
 	flag.StringVar(&src, "src", "", "(Required) URL of the site to pull from")
@@ -76,6 +76,15 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		os.Remove(link)
 
 		if err := os.Symlink(dir, link); err != nil {
+			panic(err)
+		}
+
+		s3cmd := exec.Command("ACCESS_TOKEN="+access_token, "SECRET_TOKEN="+secret_token, "s3cmd", "sync", link+"/", "--delete-removed", "s3://"+bucket)
+		s3cmd.Stdout = w
+		s3cmd.Stderr = w
+
+		if err := s3cmd.Run(); err != nil {
+			w.Write([]byte("Publishing the site locally went off without a hitch, but syncing to S3 failed for some reason, so you're probably fucked."))
 			panic(err)
 		}
 	} else {

@@ -1,3 +1,5 @@
 `go build publisher.go`
 
 put "publisher" binary and publisher.html in /usr/local/bin and publisher.conf in /etc/init
+
+put .s3cfg in /root/ (or homedir of user running publisher.conf)
