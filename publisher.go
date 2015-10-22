@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-var src, dest, link, port, user, pass, access_key, secret_key, bucket string
+var src, dest, link, port, user, pass, bucket, access_key, secret_key string
 
 func init() {
 	flag.StringVar(&src, "src", "", "(Required) URL of the site to pull from")
@@ -21,6 +21,9 @@ func init() {
 	flag.StringVar(&port, "port", "", "(Required) Port for the web interface to listen on")
 	flag.StringVar(&user, "user", "", "(Optional) HTTP auth username")
 	flag.StringVar(&pass, "pass", "", "(Optional) HTTP auth password")
+	flag.StringVar(&bucket, "bucket", "", "(Optional) S3 bucket to sync to after publishing locally (i.e. symlinking)")
+	flag.StringVar(&access_key, "access_key", "", "(Optional) AWS key for S3")
+	flag.StringVar(&secret_key, "secret_key", "", "(Optional) AWS secret for S3")
 }
 
 func main() {
@@ -79,7 +82,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			panic(err)
 		}
 
-		s3cmd := exec.Command("ACCESS_TOKEN="+access_token, "SECRET_TOKEN="+secret_token, "s3cmd", "sync", link+"/", "--delete-removed", "s3://"+bucket)
+		s3cmd := exec.Command("ACCESS_KEY="+access_key, "SECRET_KEY="+secret_key, "s3cmd", "sync", link+"/", "--delete-removed", "s3://"+bucket)
 		s3cmd.Stdout = w
 		s3cmd.Stderr = w
 
