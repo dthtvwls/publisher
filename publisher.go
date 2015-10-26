@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"net/http"
 	"net/url"
@@ -25,6 +26,13 @@ func init() {
 	flag.StringVar(&secret_key, "secret_key", "", "(Required) AWS secret for S3")
 }
 
+func execute(w http.ResponseWriter, args ...string) error {
+	cmd := exec.Command(args[0], args[1:]...)
+	cmd.Stdout = w
+	cmd.Stderr = w
+	return cmd.Run()
+}
+
 func main() {
 	flag.Parse()
 
@@ -45,49 +53,47 @@ func main() {
 		log.Fatal("Please use absolute paths")
 	}
 
-	http.HandleFunc("/", handler)
-	http.ListenAndServe(":"+port, nil)
-}
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "POST" {
+			// put the snapshot in its own, timestamped directory (in ISO 8601 because standards)
+			dir := filepath.Join(dest, time.Now().UTC().Format("2006-01-02T15:04:05Z"))
 
-func handler(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "POST" {
-		// put the snapshot in its own, timestamped directory (in ISO 8601 because standards)
-		dir := filepath.Join(dest, time.Now().UTC().Format("2006-01-02T15:04:05Z"))
-
-		if err := os.MkdirAll(dir, 0755); err != nil {
-			panic(err)
-		}
-
-		// TODO: figure out chunked data because a curl call (for example) might bail before the wget job is done
-		cmd := exec.Command("wget", "--mirror", "--page-requisites", "--adjust-extension", "--convert-links",
-			"--no-host-directories", "--http-user="+user, "--http-password="+pass, "--directory-prefix="+dir, src)
-		cmd.Stdout = w
-		cmd.Stderr = w
-
-		if err := cmd.Run(); err != nil {
-			// wget will have almost certainly tried some requests that returned http errors, and thus return 8:
-			//   http://www.gnu.org/software/wget/manual/html_node/Exit-Status.html
-			// so if the error was an "exit error", and the status is 8, let's not panic
-			if exiterr, ok := err.(*exec.ExitError); !ok || exiterr.Sys().(syscall.WaitStatus).ExitStatus() != 8 {
+			if err := os.MkdirAll(dir, 0755); err != nil {
 				panic(err)
 			}
-		}
 
-		if err := os.Setenv("ACCESS_KEY", access_key); err != nil {
-			panic(err)
-		}
-		if err := os.Setenv("SECRET_KEY", secret_key); err != nil {
-			panic(err)
-		}
+			// TODO: figure out chunked data because a curl call (for example) might bail before the wget job is done
+			if err := execute(w, "wget", "--mirror", "--page-requisites", "--adjust-extension", "--convert-links",
+				"--no-host-directories", "--http-user="+user, "--http-password="+pass, "--directory-prefix="+dir, src); err != nil {
+				// wget will have almost certainly tried some requests that returned http errors, and thus return 8:
+				//   http://www.gnu.org/software/wget/manual/html_node/Exit-Status.html
+				// so if the error was an "exit error", and the status is 8, let's not panic
+				if exiterr, ok := err.(*exec.ExitError); !ok || exiterr.Sys().(syscall.WaitStatus).ExitStatus() != 8 {
+					panic(err)
+				}
+			}
 
-		s3cmd := exec.Command("s3cmd", "sync", dir+"/", "--delete-removed", "s3://"+bucket)
-		s3cmd.Stdout = w
-		s3cmd.Stderr = w
+			if err := os.Setenv("ACCESS_KEY", access_key); err != nil {
+				panic(err)
+			}
+			if err := os.Setenv("SECRET_KEY", secret_key); err != nil {
+				panic(err)
+			}
 
-		if err := s3cmd.Run(); err != nil {
-			panic(err)
+			if err := execute(w, "s3cmd", "sync", dir+"/", "--delete-removed", "s3://"+bucket); err != nil {
+				panic(err)
+			}
+			if err := execute(w, "s3cmd", "modify", "s3://"+bucket+"/**/*.css", "--mime-type='text/css'"); err != nil {
+				panic(err)
+			}
+			if err := execute(w, "s3cmd", "modify", "s3://"+bucket+"/*.html", "--mime-type='text/html; charset=utf-8'"); err != nil {
+				panic(err)
+			}
+
+		} else {
+			http.ServeFile(w, r, "publisher.html")
 		}
-	} else {
-		http.ServeFile(w, r, "publisher.html")
-	}
+	})
+
+	http.ListenAndServe(":"+port, nil)
 }
