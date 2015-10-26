@@ -62,7 +62,7 @@ func main() {
 			}
 
 			// TODO: figure out chunked data because a curl call (for example) might bail before the wget job is done
-			if err := execute(w, "wget", "--mirror", "--page-requisites", "--adjust-extension", "--convert-links",
+			if err := execute("wget", "--mirror", "--page-requisites", "--adjust-extension", "--convert-links",
 				"--no-host-directories", "--http-user="+user, "--http-password="+pass, "--directory-prefix="+dir, src); err != nil {
 				// wget will have almost certainly tried some requests that returned http errors, and thus return 8:
 				//   http://www.gnu.org/software/wget/manual/html_node/Exit-Status.html
@@ -82,13 +82,12 @@ func main() {
 			if err := execute(w, "s3cmd", "sync", dir+"/", "--delete-removed", "s3://"+bucket); err != nil {
 				panic(err)
 			}
-			if err := execute(w, "s3cmd", "modify", "s3://"+bucket+"/**/*.css", "--mime-type='text/css'"); err != nil {
+			if err := execute(w, "s3cmd", "modify", "s3://"+bucket+"/**/*.css", "--mime-type=text/css"); err != nil {
 				panic(err)
 			}
-			if err := execute(w, "s3cmd", "modify", "s3://"+bucket+"/*.html", "--mime-type='text/html; charset=utf-8'"); err != nil {
+			if err := execute(w, "s3cmd", "modify", "s3://"+bucket+"/*.html", "--mime-type=text/html; charset=utf-8"); err != nil {
 				panic(err)
 			}
-
 		} else {
 			http.ServeFile(w, r, "publisher.html")
 		}
