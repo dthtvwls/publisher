@@ -62,7 +62,7 @@ func main() {
 			}
 
 			// TODO: figure out chunked data because a curl call (for example) might bail before the wget job is done
-			if err := execute("wget", "--mirror", "--page-requisites", "--adjust-extension", "--convert-links",
+			if err := execute(w, "wget", "--mirror", "--page-requisites", "--adjust-extension", "--convert-links",
 				"--no-host-directories", "--http-user="+user, "--http-password="+pass, "--directory-prefix="+dir, src); err != nil {
 				// wget will have almost certainly tried some requests that returned http errors, and thus return 8:
 				//   http://www.gnu.org/software/wget/manual/html_node/Exit-Status.html
