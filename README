@@ -3,3 +3,5 @@
 put "publisher" binary and publisher.html in /usr/local/bin and publisher.conf in /etc/init
 
 put .s3cfg in /root/ (or homedir of user running publisher.conf)
+
+Tested with s3cmd 1.5.1.2, wget 1.16.1, and go 1.4.2
